@@ -41,7 +41,7 @@ def signature_cmp(m1, m2):
 def implemented_methods(path):
     # return {'sel1':[sig1, sig2], 'sel2':[sig3]}
 
-    re_sig_sel = re.compile("\s*method_imp 0x\w+ ([+|-]\[.+\s(.+)\])")
+    re_sig_sel = re.compile("\s*imp 0x\w+ ([+|-]\[.+\s(.+)\])")
     
     impl = {} # sel -> clsmtd
     
@@ -65,7 +65,7 @@ def referenced_methods(path):
     
     refs = set()
     
-    for line in os.popen("/usr/bin/otool -v -s __OBJC __message_refs %s" % path).xreadlines():
+    for line in os.popen("/usr/bin/otool -v -s __DATA __objc_selrefs %s" % path).xreadlines():
         results = re_sel.findall(line)
         if results:
             refs.add(results[0])
