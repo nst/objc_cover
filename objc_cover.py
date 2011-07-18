@@ -17,7 +17,9 @@ def verified_macho_path(args):
     if not os.path.isfile(path):
         return None
 
-    if not os.popen("/usr/bin/file -b %s" % path).read().startswith('Mach-O'):
+    s = os.popen("/usr/bin/file -b %s" % path).read()
+
+    if not s.startswith('Mach-O'):
         return None
     
     return path
@@ -39,15 +41,17 @@ def signature_cmp(m1, m2):
     return result
 
 def implemented_methods(path):
-    # return {'sel1':[sig1, sig2], 'sel2':[sig3]}
-
-    re_sig_sel = re.compile("\s*imp 0x\w+ ([+|-]\[.+\s(.+)\])")
+    """
+    returns {'sel1':[sig1, sig2], 'sel2':[sig3]}
+    """
+    
+    re_sig_sel = re.compile("\s*imp 0x\w+ ([+|-]\[.+\s(.+)\])") # ios and mac
     
     impl = {} # sel -> clsmtd
     
     for line in os.popen("/usr/bin/otool -oV %s" % path).xreadlines():
         results = re_sig_sel.findall(line)
-            
+        
         if not results:
             continue
         (sig, sel) = results[0]
@@ -59,13 +63,18 @@ def implemented_methods(path):
     
     return impl
 
-def referenced_methods(path):
+def referenced_selectors(path):
     
-    re_sel = re.compile(".+\s+__TEXT:__cstring:(.+)")
+    re_sel = re.compile("__TEXT:__cstring:(.+)")
     
     refs = set()
     
-    for line in os.popen("/usr/bin/otool -v -s __DATA __objc_selrefs %s" % path).xreadlines():
+    lines = os.popen("/usr/bin/otool -X -v -s __OBJC __message_refs %s" % path).readlines() # mac
+    
+    if not lines:
+        lines = os.popen("/usr/bin/otool -v -s __DATA __objc_selrefs %s" % path).readlines() # ios
+
+    for line in lines:
         results = re_sel.findall(line)
         if results:
             refs.add(results[0])
@@ -79,10 +88,13 @@ def potentially_unreferenced_methods():
         print "# can't find implemented methods"
         sys.exit(1)
     
-    referenced = referenced_methods(path)
-
+    referenced = referenced_selectors(path)
+    
     l = []
     
+    #print "-- implemented:", len(implemented)
+    #print "-- referenced:", len(referenced)
+
     for sel in implemented:
         if sel not in referenced:
             for method in implemented[sel]:
