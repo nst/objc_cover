@@ -1,4 +1,4 @@
-Say you have this Objective-C Cocoa Touch code:
+Say you have this Objective-C code:
 
     - (void)notUsed {
     	return;
@@ -12,7 +12,7 @@ Say you have this Objective-C Cocoa Touch code:
     
     [self actuallyUsed];
 
-Thaks to `/usr/bin/otool`, you can get clues about potentially unused methods, like this:
+Thanks to `/usr/bin/otool`, you can get clues about potentially unused methods, like this:
 
     $ python objc_cover.py /Users/nst/Desktop/iCalReport 
     # the following methods may be unreferenced
