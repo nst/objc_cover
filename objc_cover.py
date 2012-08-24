@@ -57,12 +57,16 @@ def implemented_methods(path):
     returns {'sel1':[sig1, sig2], 'sel2':[sig3]}
     """
     
-    re_sig_sel = re.compile("\s*imp 0x\w+ ([+|-]\[.+\s(.+)\])") # ios and mac
+    re_sig_sel_ios = re.compile("\s*imp 0x\w+ ([+|-]\[.+\s(.+)\])")
+    re_sig_sel_mac = re.compile("\s*imp ([+|-]\[.+\s(.+)\])")
     
     impl = {} # sel -> clsmtd
     
     for line in os.popen("/usr/bin/otool -oV %s" % path).xreadlines():
-        results = re_sig_sel.findall(line)
+        results = re_sig_sel_ios.findall(line)
+        if not results:
+            results = re_sig_sel_mac.findall(line)
+        #print results
         
         if not results:
             continue
@@ -77,14 +81,11 @@ def implemented_methods(path):
 
 def referenced_selectors(path):
     
-    re_sel = re.compile("__TEXT:__cstring:(.+)")
+    re_sel = re.compile("__TEXT:__objc_methname:(.+)")
     
     refs = set()
     
-    lines = os.popen("/usr/bin/otool -X -v -s __OBJC __message_refs %s" % path).readlines() # mac
-    
-    if not lines:
-        lines = os.popen("/usr/bin/otool -v -s __DATA __objc_selrefs %s" % path).readlines() # ios
+    lines = os.popen("/usr/bin/otool -v -s __DATA __objc_selrefs %s" % path).readlines() # ios & mac
 
     for line in lines:
         results = re_sel.findall(line)
