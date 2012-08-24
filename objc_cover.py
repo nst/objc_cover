@@ -4,9 +4,11 @@ __author__ = "Nicolas Seriot"
 __date__ = "2010-03-01"
 __license__ = "GPL"
 
-import sys
 import os
 import re
+import shutil
+import sys
+import tempfile
 
 def verified_macho_path(args):
     if len(sys.argv) != 2:
@@ -17,7 +19,17 @@ def verified_macho_path(args):
     if not os.path.isfile(path):
         return None
 
-    s = os.popen("/usr/bin/file -b %s" % path).read()
+    ## Apparently there is a bug in otool -- it doesn't seem to like executables
+    ## with spaces in the names. If this is the case, make a copy and analyze that.
+    if ' ' in os.path.basename(path):
+        ## don't remove the spaces, that could lead to an empty string
+        new_filename = path.replace(' ', '_')
+        new_path = os.path.join(tempfile.mkdtemp(), new_filename)
+        shutil.copy(path, new_path)
+        path = new_path
+
+    cmd = "/usr/bin/file -b %r" % path
+    s = os.popen(cmd).read()
 
     if not s.startswith('Mach-O'):
         return None
